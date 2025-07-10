@@ -10,6 +10,7 @@
 | --------------- | ------------------------------------------------------------------------- |
 | `rkcfgtool.cpp` | Main CLI tool (C++17) for reading/writing Rockchip binary CFG files.      |
 | `test.sh`       | Shell script that builds `rkcfgtool` and executes basic regression tests. |
+| `cfg`           | RKDevTool configuration file and screenshot of the configuration                  |
 | `AGENTS.md`     | *← you are here* — workflow guide for AI agents.                          |
 
 ## Tool Overview & Principles
@@ -22,7 +23,7 @@
 
 | Platform | Compiler         | Command                                         |
 | -------- | ---------------- | ----------------------------------------------- |
-| Linux    | GCC 10 +         | `g++ -std=c++17 -O2 -o rkcfgtool rkcfgtool.cpp` |
+| Linux    | GCC 10 +         | `make` |
 
 ### 2.1 Automated Tests
 
@@ -30,6 +31,9 @@ Run **all** tests exactly like this:
 
 ```bash
 ./test.sh
+
+# or
+make test
 ```
 
 The script must exit with status 0. If you need extra test cases, append them **inside** `test.sh` and keep the script idempotent.
