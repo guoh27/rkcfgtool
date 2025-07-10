@@ -177,16 +177,19 @@ static bool rebuildAndWrite(const std::string &outFile,
 static void showHelp() {
   std::cout <<
       R"(Usage:
-  cfgtool <cfg> [actions…] [-o <output.cfg>]
-  cfgtool --create <output.cfg> [actions…]
+  rkcfgtool <cfg> [actions…] [-o <output.cfg>]
+  rkcfgtool --create <output.cfg> [actions…]
+  rkcfgtool --help | --version
 
 Actions (may repeat; executed in order):
   --list                         List entries (default)
   --set-path <idx> <newPath>     Change path of entry <idx>
   --add      <name> <path>       Append a new entry
   --del      <idx>               Delete entry <idx>
-  --create <file>                Start a new CFG instead of reading one
-  --version                      Show rkcfgtool version
+  --create   <file>              Start a new CFG instead of reading one
+  -o, --output <file>            Write result to <file>
+  -V, --version                  Show rkcfgtool version
+  -h, --help                     Show this help message
 )";
 }
 
@@ -194,13 +197,20 @@ Actions (may repeat; executed in order):
  * 6. Main entry
  *-------------------------------------------------------------------*/
 int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    showHelp();
-    return 0;
+  for (int j = 1; j < argc; ++j) {
+    std::string arg = argv[j];
+    if (arg == "--help" || arg == "-h") {
+      showHelp();
+      return 0;
+    }
+    if (arg == "--version" || arg == "-V") {
+      std::cout << "rkcfgtool " << RKCFGTOOL_VERSION << '\n';
+      return 0;
+    }
   }
 
-  if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-V") {
-    std::cout << "rkcfgtool " << RKCFGTOOL_VERSION << '\n';
+  if (argc < 2) {
+    showHelp();
     return 0;
   }
 
