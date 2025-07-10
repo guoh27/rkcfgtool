@@ -1,6 +1,7 @@
-ifeq ($(origin CC),default)
+ifeq ($(origin CXX),default)
 CXX = g++
 endif
+
 CXXFLAGS ?= -std=c++17 -Wall -Wextra -O2
 TARGET = rkcfgtool
 PREFIX ?= /usr/local
@@ -16,7 +17,7 @@ install: $(TARGET)
 	install -m 0755 $(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET)
 
 lint:
-	$(CXX) $(CFLAGS) -fsyntax-only grubenv.c
+	$(CXX) $(CXXFLAGS) -fsyntax-only rkcfgtool.cpp
 
 test: $(TARGET)
 	./tests.sh
