@@ -63,6 +63,19 @@ static void writeU16Z(std::vector<uint8_t> &out, const std::u16string &s) {
   out.push_back(0); // trailing 0x0000
 }
 
+// Find the next plausible UTF-16LE ASCII string beginning at or after `pos`.
+// Returns the starting offset or `std::string::npos` if none found.
+static size_t findAsciiU16(const std::vector<uint8_t> &buf, size_t pos) {
+  auto isAscii = [](uint8_t b) { return b >= 0x20 && b <= 0x7e; };
+  for (; pos + 3 < buf.size(); ++pos) {
+    if (buf[pos + 1] == 0 && isAscii(buf[pos]) && buf[pos + 3] == 0 &&
+        isAscii(buf[pos + 2])) {
+      return pos;
+    }
+  }
+  return std::string::npos;
+}
+
 static std::vector<uint8_t> createPrefix() {
   Header hdr{};
   std::memcpy(hdr.magic, "CFG", 3);
@@ -104,32 +117,31 @@ static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
     return false;
   }
 
-  // Copy header + reserved-zero prefix
+  // Copy header and locate first UTF-16 entry heuristically
   size_t pos = sizeof(Header);
   while (pos < raw.size() && raw[pos] == 0)
     ++pos; // skip zeros
   if (pos & 1)
     ++pos; // ensure 2‑byte alignment
+  pos = findAsciiU16(raw, pos);
+  if (pos == std::string::npos) {
+    std::cerr << "No entries found in " << file << '\n';
+    return false;
+  }
   prefix.assign(raw.begin(), raw.begin() + pos);
 
-  // Read directory entries
-  while (pos + 1 < raw.size()) {
-    bool allZero = true;
-    for (size_t i = pos; i < std::min(pos + 16, raw.size()); ++i)
-      if (raw[i]) {
-        allZero = false;
-        break;
-      }
-    if (allZero)
-      break; // 16 zeros ⇒ end
+  // Extract all UTF-16 strings
+  std::vector<std::u16string> strs;
+  while (pos != std::string::npos && pos + 1 < raw.size()) {
+    strs.push_back(readU16Z(raw, pos));
+    pos = findAsciiU16(raw, pos);
+  }
 
+  // Pair them as name/path entries
+  for (size_t i = 0; i + 1 < strs.size(); i += 2) {
     Entry e;
-    e.name = readU16Z(raw, pos);
-
-    while (pos + 1 < raw.size() && raw[pos] == 0 && raw[pos + 1] == 0)
-      pos += 2; // skip padding
-
-    e.path = readU16Z(raw, pos);
+    e.name = std::move(strs[i]);
+    e.path = std::move(strs[i + 1]);
     items.push_back(std::move(e));
   }
   return true;
