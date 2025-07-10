@@ -5,7 +5,8 @@ set -e
 make clean >/dev/null
 make >/dev/null
 
-# version output
+# help and version output
+./rkcfgtool --help > /dev/null
 ./rkcfgtool --version > /dev/null
 
 # list all sample cfgs
