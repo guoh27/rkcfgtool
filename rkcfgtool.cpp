@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "version.hpp"
 /*--------------------------------------------------------------------
  * 1. File layout (deduced from sample)
  *    ┌────────────┐  Header (magic "CFG\0" + timestamp)
@@ -173,6 +174,7 @@ Actions (may repeat; executed in order):
   --add      <name> <path>       Append a new entry
   --del      <idx>               Delete entry <idx>
   --create <file>                Start a new CFG instead of reading one
+  --version                      Show rkcfgtool version
 )";
 }
 
@@ -182,6 +184,11 @@ Actions (may repeat; executed in order):
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     showHelp();
+    return 0;
+  }
+
+  if (std::string(argv[1]) == "--version" || std::string(argv[1]) == "-V") {
+    std::cout << "rkcfgtool " << RKCFGTOOL_VERSION << '\n';
     return 0;
   }
 

@@ -14,6 +14,7 @@ make
 ```sh
 rkcfgtool <cfg> [actions...] [-o output.cfg]
 rkcfgtool --create <output.cfg> [actions...]
+rkcfgtool --version
 ```
 
 Actions:
@@ -21,6 +22,7 @@ Actions:
 - `--set-path <idx> <newPath>` – change path of entry
 - `--add <name> <path>` – append a new entry
 - `--del <idx>` – delete entry
+- `--version` – show rkcfgtool version
 
 ## Tests
 
