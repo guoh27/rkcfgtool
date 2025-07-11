@@ -35,6 +35,7 @@ struct Header {
 struct Entry {
   std::u16string name;
   std::u16string path;
+  std::vector<uint8_t> gap;
 };
 
 // UTF-16LE ⇄ UTF-8 converter
@@ -136,7 +137,8 @@ static std::vector<uint8_t> createPrefix() {
  * 3. Parse existing CFG file
  *-------------------------------------------------------------------*/
 static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
-                     std::vector<uint8_t> &prefix, std::vector<Entry> &items) {
+                     std::vector<uint8_t> &prefix, std::vector<Entry> &items,
+                     std::vector<uint8_t> &suffix) {
   std::ifstream in(file, std::ios::binary);
   if (!in) {
     std::cerr << "Cannot open " << file << '\n';
@@ -168,12 +170,18 @@ static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
     return false;
   }
   prefix.assign(raw.begin(), raw.begin() + pos);
+  size_t lastEnd = pos;
 
-  // Extract all UTF-16 strings
+  // Extract all UTF-16 strings along with their byte ranges and gaps
   std::vector<std::u16string> strs;
+  std::vector<std::pair<size_t, size_t>> ranges;
+  std::vector<std::vector<uint8_t>> gaps;
   auto validAscii = [](char16_t c) { return c >= 0x21 && c < 0x7f; };
   while (pos != std::string::npos && pos + 1 < raw.size()) {
+    size_t start = pos;
     std::u16string s = readU16Z(raw, pos);
+    size_t end = pos;
+    lastEnd = pos;
     bool ok = !s.empty();
     bool hasAlnum = false;
     for (char16_t ch : s) {
@@ -184,9 +192,24 @@ static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
       if (std::isalnum(static_cast<unsigned char>(ch)))
         hasAlnum = true;
     }
-    if (ok && hasAlnum)
+    if (ok && hasAlnum) {
       strs.push_back(std::move(s));
-    pos = findAsciiU16(raw, pos);
+      ranges.emplace_back(start, end);
+    }
+    size_t next = findAsciiU16(raw, pos);
+    if (ok && hasAlnum) {
+      gaps.emplace_back(raw.begin() + pos, next == std::string::npos
+                                               ? raw.end()
+                                               : raw.begin() + next);
+    }
+    pos = next;
+  }
+
+  if (!gaps.empty()) {
+    suffix = std::move(gaps.back());
+    gaps.pop_back();
+  } else {
+    suffix.clear();
   }
 
   // Pair them as name/path entries. Some files may omit paths for certain
@@ -209,7 +232,7 @@ static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
       forcePair = true;
   }
 
-  for (size_t i = 0; i < strs.size(); ++i) {
+  for (size_t i = 0, g = 0; i < strs.size(); ++i, ++g) {
     Entry e;
     e.name = std::move(strs[i]);
     if (i + 1 < strs.size()) {
@@ -220,10 +243,14 @@ static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
       if (forcePair || looksLikePath) {
         e.path = cand;
         ++i;
+        ++g;
       }
     }
+    if (g < gaps.size())
+      e.gap = std::move(gaps[g]);
     items.push_back(std::move(e));
   }
+
   return true;
 }
 
@@ -232,13 +259,15 @@ static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
  *-------------------------------------------------------------------*/
 static bool rebuildAndWrite(const std::string &outFile,
                             const std::vector<uint8_t> &prefix,
-                            const std::vector<Entry> &items) {
+                            const std::vector<Entry> &items,
+                            const std::vector<uint8_t> &suffix) {
   std::vector<uint8_t> out(prefix); // header + zeros
   for (const auto &e : items) {
     writeU16Z(out, e.name);
     writeU16Z(out, e.path);
+    out.insert(out.end(), e.gap.begin(), e.gap.end());
   }
-  out.insert(out.end(), 16, 0); // terminator
+  out.insert(out.end(), suffix.begin(), suffix.end());
 
   std::ofstream ofs(outFile, std::ios::binary);
   if (!ofs) {
@@ -296,7 +325,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  std::vector<uint8_t> raw, prefix;
+  std::vector<uint8_t> raw, prefix, suffix;
   std::vector<Entry> items;
   bool jsonOut = false;
   std::string outFile;
@@ -309,8 +338,9 @@ int main(int argc, char *argv[]) {
 
   if (create) {
     prefix = createPrefix();
+    suffix.assign(16, 0);
   } else {
-    if (!parseCfg(inFile, raw, prefix, items))
+    if (!parseCfg(inFile, raw, prefix, items, suffix))
       return 1;
   }
 
@@ -397,7 +427,7 @@ int main(int argc, char *argv[]) {
 
   // Write back if needed
   if (!outFile.empty())
-    return rebuildAndWrite(outFile, prefix, items) ? 0 : 1;
+    return rebuildAndWrite(outFile, prefix, items, suffix) ? 0 : 1;
 
   return 0;
 }
