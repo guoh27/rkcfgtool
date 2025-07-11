@@ -12,17 +12,20 @@ make
 ## Usage
 
 ```sh
-rkcfgtool <cfg> [actions...] [-o output.cfg]
-rkcfgtool --create <output.cfg> [actions...]
+rkcfgtool <cfg> [--create] [actions...] [-o output.cfg]
 rkcfgtool --help | --version
 ```
+
+If `-o` is omitted, changes are written back to `<cfg>`.
 
 Actions:
 - `--list` – list entries (default)
 - `--set-path <idx> <newPath>` – change path of entry
+- `--set-name <idx> <newName>` – change name of entry
 - `--add <name> <path>` – append a new entry
 - `--del <idx>` – delete entry
 - `--json` – output entries as JSON
+- `--create` – start a new config instead of reading one
 - `--version` – show rkcfgtool version
 - `--help` – show usage information
 
