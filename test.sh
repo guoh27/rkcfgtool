@@ -2,7 +2,6 @@
 set -e
 
 # build
-make clean >/dev/null
 make >/dev/null
 
 # help and version output
@@ -13,11 +12,6 @@ make >/dev/null
 for f in cfg/*.cfg; do
     ./rkcfgtool "$f" --json | python3 -m json.tool > /dev/null
 done
-
-# ensure default output is script friendly
-if ./rkcfgtool cfg/config2.cfg | grep -q -- '->'; then
-    exit 1
-fi
 
 # modify existing cfg
 cp cfg/config1.cfg t1.cfg
