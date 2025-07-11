@@ -266,6 +266,7 @@ Actions (may repeat; executed in order):
   --set-name <idx> <newName>     Change name of entry <idx>
   --add      <name> <path>       Append a new entry
   --del      <idx>               Delete entry <idx>
+  --disable  <idx>               Clear path of entry <idx>
   --json                         Output entries as JSON
   --create                       Start a new CFG instead of reading one
   -o, --output <file>            Write result to <file>
@@ -352,6 +353,14 @@ int main(int argc, char *argv[]) {
         return 1;
       }
       items.erase(items.begin() + idx);
+      modified = true;
+    } else if (arg == "--disable" && i + 1 < argc) {
+      size_t idx = std::stoul(argv[++i]);
+      if (idx >= items.size()) {
+        std::cerr << "Index out of range\n";
+        return 1;
+      }
+      items[idx].path.clear();
       modified = true;
     } else if (arg == "--json") {
       jsonOut = true;
