@@ -24,6 +24,7 @@ Actions:
 - `--set-name <idx> <newName>` – change name of entry
 - `--add <name> <path>` – append a new entry
 - `--del <idx>` – delete entry
+- `--disable <idx>` – clear path of entry
 - `--json` – output entries as JSON
 - `--create` – start a new config instead of reading one
 - `--version` – show rkcfgtool version
