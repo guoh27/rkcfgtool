@@ -63,13 +63,52 @@ static void writeU16Z(std::vector<uint8_t> &out, const std::u16string &s) {
   out.push_back(0); // trailing 0x0000
 }
 
+static std::string jsonEscape(const std::string &s) {
+  std::string out;
+  for (char c : s) {
+    switch (c) {
+    case '\\':
+      out += "\\\\";
+      break;
+    case '"':
+      out += "\\\"";
+      break;
+    case '\b':
+      out += "\\b";
+      break;
+    case '\f':
+      out += "\\f";
+      break;
+    case '\n':
+      out += "\\n";
+      break;
+    case '\r':
+      out += "\\r";
+      break;
+    case '\t':
+      out += "\\t";
+      break;
+    default:
+      if (static_cast<unsigned char>(c) < 0x20) {
+        char buf[7];
+        std::snprintf(buf, sizeof(buf), "\\u%04x",
+                      static_cast<unsigned char>(c));
+        out += buf;
+      } else {
+        out += c;
+      }
+    }
+  }
+  return out;
+}
+
 // Find the next plausible UTF-16LE ASCII string beginning at or after `pos`.
 // Returns the starting offset or `std::string::npos` if none found.
 static size_t findAsciiU16(const std::vector<uint8_t> &buf, size_t pos) {
   auto isAscii = [](uint8_t b) { return b >= 0x20 && b <= 0x7e; };
   for (; pos + 3 < buf.size(); ++pos) {
     if (buf[pos + 1] == 0 && isAscii(buf[pos]) && buf[pos + 3] == 0 &&
-        isAscii(buf[pos + 2])) {
+        (isAscii(buf[pos + 2]) || buf[pos + 2] == 0)) {
       return pos;
     }
   }
@@ -132,16 +171,38 @@ static bool parseCfg(const std::string &file, std::vector<uint8_t> &raw,
 
   // Extract all UTF-16 strings
   std::vector<std::u16string> strs;
+  auto validAscii = [](char16_t c) { return c >= 0x21 && c < 0x7f; };
   while (pos != std::string::npos && pos + 1 < raw.size()) {
-    strs.push_back(readU16Z(raw, pos));
+    std::u16string s = readU16Z(raw, pos);
+    bool ok = !s.empty();
+    bool hasAlnum = false;
+    for (char16_t ch : s) {
+      if (!validAscii(ch)) {
+        ok = false;
+        break;
+      }
+      if (std::isalnum(static_cast<unsigned char>(ch)))
+        hasAlnum = true;
+    }
+    if (ok && hasAlnum)
+      strs.push_back(std::move(s));
     pos = findAsciiU16(raw, pos);
   }
 
-  // Pair them as name/path entries
-  for (size_t i = 0; i + 1 < strs.size(); i += 2) {
+  // Pair them as name/path entries. Some files may omit paths for certain
+  // names. Heuristically treat a string as a path only if it looks like one.
+  for (size_t i = 0; i < strs.size(); ++i) {
     Entry e;
     e.name = std::move(strs[i]);
-    e.path = std::move(strs[i + 1]);
+    if (i + 1 < strs.size()) {
+      const auto &cand = strs[i + 1];
+      if (cand.find(u'\\') != std::u16string::npos ||
+          cand.find(u'/') != std::u16string::npos ||
+          cand.find(u'.') != std::u16string::npos) {
+        e.path = cand;
+        ++i;
+      }
+    }
     items.push_back(std::move(e));
   }
   return true;
@@ -186,6 +247,7 @@ Actions (may repeat; executed in order):
   --set-path <idx> <newPath>     Change path of entry <idx>
   --add      <name> <path>       Append a new entry
   --del      <idx>               Delete entry <idx>
+  --json                         Output entries as JSON
   --create   <file>              Start a new CFG instead of reading one
   -o, --output <file>            Write result to <file>
   -V, --version                  Show rkcfgtool version
@@ -216,6 +278,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<uint8_t> raw, prefix;
   std::vector<Entry> items;
+  bool jsonOut = false;
   std::string outFile;
   int i = 1;
 
@@ -258,6 +321,8 @@ int main(int argc, char *argv[]) {
         return 1;
       }
       items.erase(items.begin() + idx);
+    } else if (arg == "--json") {
+      jsonOut = true;
     } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
       outFile = argv[++i];
     } else if (arg == "--create") {
@@ -270,10 +335,22 @@ int main(int argc, char *argv[]) {
   }
 
   // Show directory entries
-  std::cout << "=== Entry list (" << items.size() << ") ===\n";
-  for (size_t i = 0; i < items.size(); ++i)
-    std::cout << std::setw(2) << i << ": " << cvt.to_bytes(items[i].name)
-              << "  ->  " << cvt.to_bytes(items[i].path) << '\n';
+  if (jsonOut) {
+    std::cout << "[\n";
+    for (size_t i = 0; i < items.size(); ++i) {
+      if (i)
+        std::cout << ",\n";
+      std::cout << "  {\"index\":" << i << ",\"name\":\""
+                << jsonEscape(cvt.to_bytes(items[i].name)) << "\",\"path\":\""
+                << jsonEscape(cvt.to_bytes(items[i].path)) << "\"}";
+    }
+    std::cout << "\n]\n";
+  } else {
+    std::cout << "=== Entry list (" << items.size() << ") ===\n";
+    for (size_t i = 0; i < items.size(); ++i)
+      std::cout << std::setw(2) << i << " " << cvt.to_bytes(items[i].name)
+                << " " << cvt.to_bytes(items[i].path) << '\n';
+  }
 
   // Write back if requested
   if (!outFile.empty())

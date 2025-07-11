@@ -20,7 +20,7 @@ lint:
 	$(CXX) $(CXXFLAGS) -fsyntax-only rkcfgtool.cpp
 
 test: $(TARGET)
-	./tests.sh
+	./test.sh
 
 clean:
 	rm -f $(TARGET)

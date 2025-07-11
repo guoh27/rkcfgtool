@@ -22,6 +22,7 @@ Actions:
 - `--set-path <idx> <newPath>` – change path of entry
 - `--add <name> <path>` – append a new entry
 - `--del <idx>` – delete entry
+- `--json` – output entries as JSON
 - `--version` – show rkcfgtool version
 - `--help` – show usage information
 
