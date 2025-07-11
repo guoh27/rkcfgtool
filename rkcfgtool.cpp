@@ -238,17 +238,17 @@ static bool rebuildAndWrite(const std::string &outFile,
 static void showHelp() {
   std::cout <<
       R"(Usage:
-  rkcfgtool <cfg> [actions…] [-o <output.cfg>]
-  rkcfgtool --create <output.cfg> [actions…]
+  rkcfgtool <cfg> [--create] [actions…] [-o <output.cfg>]
   rkcfgtool --help | --version
 
 Actions (may repeat; executed in order):
   --list                         List entries (default)
   --set-path <idx> <newPath>     Change path of entry <idx>
+  --set-name <idx> <newName>     Change name of entry <idx>
   --add      <name> <path>       Append a new entry
   --del      <idx>               Delete entry <idx>
   --json                         Output entries as JSON
-  --create   <file>              Start a new CFG instead of reading one
+  --create                       Start a new CFG instead of reading one
   -o, --output <file>            Write result to <file>
   -V, --version                  Show rkcfgtool version
   -h, --help                     Show this help message
@@ -280,27 +280,28 @@ int main(int argc, char *argv[]) {
   std::vector<Entry> items;
   bool jsonOut = false;
   std::string outFile;
-  int i = 1;
+  const std::string inFile = argv[1];
 
-  if (std::string(argv[i]) == "--create") {
-    if (i + 1 >= argc) {
-      showHelp();
-      return 1;
-    }
-    outFile = argv[++i];
+  bool create = false;
+  for (int j = 2; j < argc; ++j)
+    if (std::string(argv[j]) == "--create")
+      create = true;
+
+  if (create) {
     prefix = createPrefix();
-    ++i;
   } else {
-    const std::string inFile = argv[i++];
     if (!parseCfg(inFile, raw, prefix, items))
       return 1;
   }
+
+  bool modified = create;
+  int i = 2;
 
   for (; i < argc; ++i) {
     std::string arg = argv[i];
 
     if (arg == "--list") {
-      // no‑op: default action
+      // no-op: default action
     } else if (arg == "--set-path" && i + 2 < argc) {
       size_t idx = std::stoul(argv[++i]);
       std::u16string newP = cvt.from_bytes(argv[++i]);
@@ -309,11 +310,22 @@ int main(int argc, char *argv[]) {
         return 1;
       }
       items[idx].path = std::move(newP);
+      modified = true;
+    } else if (arg == "--set-name" && i + 2 < argc) {
+      size_t idx = std::stoul(argv[++i]);
+      std::u16string newN = cvt.from_bytes(argv[++i]);
+      if (idx >= items.size()) {
+        std::cerr << "Index out of range\n";
+        return 1;
+      }
+      items[idx].name = std::move(newN);
+      modified = true;
     } else if (arg == "--add" && i + 2 < argc) {
       Entry e;
       e.name = cvt.from_bytes(argv[++i]);
       e.path = cvt.from_bytes(argv[++i]);
       items.push_back(std::move(e));
+      modified = true;
     } else if (arg == "--del" && i + 1 < argc) {
       size_t idx = std::stoul(argv[++i]);
       if (idx >= items.size()) {
@@ -321,13 +333,13 @@ int main(int argc, char *argv[]) {
         return 1;
       }
       items.erase(items.begin() + idx);
+      modified = true;
     } else if (arg == "--json") {
       jsonOut = true;
     } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
       outFile = argv[++i];
     } else if (arg == "--create") {
-      std::cerr << "--create must be the first argument\n";
-      return 1;
+      // already handled
     } else {
       std::cerr << "Unknown or incomplete option: " << arg << '\n';
       return 1;
@@ -352,7 +364,10 @@ int main(int argc, char *argv[]) {
                 << " " << cvt.to_bytes(items[i].path) << '\n';
   }
 
-  // Write back if requested
+  if (modified && outFile.empty())
+    outFile = inFile;
+
+  // Write back if needed
   if (!outFile.empty())
     return rebuildAndWrite(outFile, prefix, items) ? 0 : 1;
 
