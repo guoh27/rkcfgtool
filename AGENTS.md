@@ -38,6 +38,16 @@ make test
 
 The script must exit with status 0. If you need extra test cases, append them **inside** `test.sh` and keep the script idempotent.
 
+cfg files
+
+```bash
+./rkcfgtool cfg/config1.cfg --add add1 add1 -o config1_add1.cfg
+./rkcfgtool cfg/config1.cfg --disable 9 -o config1_disable9.cfg
+./rkcfgtool cfg/config1.cfg --set-name 9 modified -o config1_modfied9_name.cfg
+./rkcfgtool cfg/config1.cfg --set-path 9 modified -o config1_modfied9_path.cfg
+./rkcfgtool cfg/config1.cfg --del 9 -o config1_remove9.cfg
+```
+
 ---
 
 ## 3 Coding Conventions
