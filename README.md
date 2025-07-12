@@ -28,13 +28,13 @@ Actions:
 - `--del <idx>` – delete entry
 - `--enable <idx> <1|0>` – set enable flag for entry
 - `--json` – output entries as JSON
+- `--script` – Output entries as machine readable text(CSV-like format)
 - `--create` – start a new config instead of reading one
 - `--version` – show rkcfgtool version
 - `--help` – show usage information
 - `<idx>` may be `-1` to target the last entry
 
-Plain output lists `index name path enabled`. JSON objects include an
-`"enabled"` field.
+Plain output lists `index enabled name path`.
 
 ## Tests
 

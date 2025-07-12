@@ -121,10 +121,12 @@ Actions (may repeat; executed in order):
   --del      <idx>               Delete entry <idx>
   --enable   <idx> <1|0>         Set enable flag of entry <idx>
   --json                         Output entries as JSON
+  --script                       Output entries as machine readable text
   --create                       Start a new CFG instead of reading one
   -o, --output <file>            Write result to <file>
   -V, --version                  Show rkcfgtool version
   -h, --help                     Show this help message
+
   <idx> may be -1 to target the last entry
 )";
 }
@@ -153,6 +155,7 @@ int main(int argc, char *argv[]) {
   RKCfgHeader hdr{};
   std::vector<Entry> items;
   bool jsonOut = false;
+  bool scriptOut = false;
   std::string outFile;
   const std::string inFile = argv[1];
 
@@ -229,6 +232,8 @@ int main(int argc, char *argv[]) {
       modified = true;
     } else if (arg == "--json") {
       jsonOut = true;
+    } else if (arg == "--script") {
+      scriptOut = true;
     } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
       outFile = argv[++i];
     } else if (arg == "--create") {
@@ -252,12 +257,20 @@ int main(int argc, char *argv[]) {
                 << "}";
     }
     std::cout << "\n]\n";
+  } else if(scriptOut) {
+    std::cout << "index,enabled,name,path\n";
+    for (size_t i = 0; i < items.size(); ++i)
+      std::cout << i << "," << static_cast<int>(items[i].selected) 
+                << ","<< cvt.to_bytes(items[i].name)
+                << "," << cvt.to_bytes(items[i].path) 
+                << '\n';
   } else {
     std::cout << "=== Entry list (" << items.size() << ") ===\n";
     for (size_t i = 0; i < items.size(); ++i)
-      std::cout << std::setw(2) << i << " " << cvt.to_bytes(items[i].name)
-                << " " << cvt.to_bytes(items[i].path) << " "
-                << static_cast<int>(items[i].selected) << '\n';
+      std::cout << i << " " << static_cast<int>(items[i].selected) 
+                << " "<< cvt.to_bytes(items[i].name)
+                << " " << cvt.to_bytes(items[i].path) 
+                << '\n';
   }
 
   if (modified && outFile.empty())
