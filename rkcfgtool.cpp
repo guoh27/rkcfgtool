@@ -29,6 +29,7 @@
 // UTF-16LE ⇄ UTF-8 converter
 static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
 
+// Convert a user-supplied index argument into a valid position within items.
 static std::optional<size_t> parseIndex(const std::vector<Entry> &items,
                                         const char *arg) {
   int idx = std::stoi(arg);
@@ -46,6 +47,7 @@ static std::optional<size_t> parseIndex(const std::vector<Entry> &items,
  * 2. Helper functions
  *-------------------------------------------------------------------*/
 
+// Escape a string so it can be safely embedded in JSON output.
 static std::string jsonEscape(const std::string &s) {
   std::string out;
   for (char c : s) {
@@ -85,6 +87,7 @@ static std::string jsonEscape(const std::string &s) {
   return out;
 }
 
+// Generate a minimal RKCfgHeader for a new configuration file.
 static RKCfgHeader createHeader() {
   RKCfgHeader hdr{};
   std::memcpy(hdr.magic, "CFG", 3);
@@ -94,11 +97,13 @@ static RKCfgHeader createHeader() {
   return hdr;
 }
 
+// Load an existing CFG file into memory.
 static bool parseCfg(const std::string &file, RKCfgHeader &hdr,
                      std::vector<Entry> &items) {
   return readRkcfg(file, hdr, items);
 }
 
+// Write a modified configuration back to disk.
 static bool rebuildAndWrite(const std::string &outFile, RKCfgHeader hdr,
                             const std::vector<Entry> &items) {
   return writeRkcfg(outFile, hdr, items);
@@ -257,20 +262,19 @@ int main(int argc, char *argv[]) {
                 << "}";
     }
     std::cout << "\n]\n";
-  } else if(scriptOut) {
+  } else if (scriptOut) {
     std::cout << "index,enabled,name,path\n";
     for (size_t i = 0; i < items.size(); ++i)
-      std::cout << i << "," << static_cast<int>(items[i].selected) 
-                << ","<< cvt.to_bytes(items[i].name)
-                << "," << cvt.to_bytes(items[i].path) 
-                << '\n';
+      std::cout << i << "," << static_cast<int>(items[i].selected) << ","
+                << cvt.to_bytes(items[i].name) << ","
+                << cvt.to_bytes(items[i].path) << '\n';
   } else {
     std::cout << "=== Entry list (" << items.size() << ") ===\n";
     for (size_t i = 0; i < items.size(); ++i)
-      std::cout << i << " " << static_cast<int>(items[i].selected) 
-                << " "<< cvt.to_bytes(items[i].name)
-                << " " << cvt.to_bytes(items[i].path) 
-                << '\n';
+      std::cout << std::setw(2) << i << " "
+                << static_cast<int>(items[i].selected) << " "
+                << cvt.to_bytes(items[i].name) << " "
+                << cvt.to_bytes(items[i].path) << '\n';
   }
 
   if (modified && outFile.empty())

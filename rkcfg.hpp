@@ -24,6 +24,7 @@ struct RKCfgItem {
 };
 #pragma pack(pop)
 
+// Convert a fixed-size UTF-16 buffer to a string without trailing zeros.
 inline std::u16string readFixed(const char16_t *buf, size_t len) {
   size_t n = 0;
   while (n < len && buf[n])
@@ -31,6 +32,7 @@ inline std::u16string readFixed(const char16_t *buf, size_t len) {
   return std::u16string(buf, n);
 }
 
+// Copy a string into a fixed-size UTF-16 buffer and pad unused bytes with zeros.
 inline void writeFixed(char16_t *dest, size_t len, const std::u16string &s) {
   std::fill_n(dest, len, 0);
   size_t n = std::min(len - 1, s.size());
