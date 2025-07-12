@@ -13,6 +13,13 @@ for f in cfg/*.cfg; do
     ./rkcfgtool "$f" --json | python3 -m json.tool > /dev/null
 done
 
+echo "Verifying lossless rewrite..."
+for f in cfg/config?.cfg; do
+    ./rkcfgtool "$f" -o tmp.cfg >/dev/null
+    cmp -s "$f" tmp.cfg
+    rm -f tmp.cfg
+done
+
 echo "Parsing non-JSON output..."
 ./rkcfgtool cfg/config1.cfg > list.txt
 grep -q "=== Entry list" list.txt
