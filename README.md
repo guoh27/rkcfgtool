@@ -1,7 +1,8 @@
 # rkcfgtool
 
 Command line utility for Rockchip RKDevTool configuration files.
-It can list, edit and create CFG entries.
+It can list, edit and create CFG entries. Parts of this project were developed
+with reference to [PenUniverse/RKCfgTool](https://github.com/PenUniverse/RKCfgTool).
 
 ## Build
 
@@ -24,7 +25,7 @@ Actions:
 - `--set-name <idx> <newName>` – change name of entry
 - `--add <name> <path>` – append a new entry
 - `--del <idx>` – delete entry
-- `--disable <idx>` – clear path of entry
+ - `--enable <idx> <1|0>` – set enable flag for entry
 - `--json` – output entries as JSON
 - `--create` – start a new config instead of reading one
 - `--version` – show rkcfgtool version

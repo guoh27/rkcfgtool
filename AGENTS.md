@@ -9,8 +9,10 @@
 | Path            | Description                                                               |
 | --------------- | ------------------------------------------------------------------------- |
 | `rkcfgtool.cpp` | Main CLI tool (C++17) for reading/writing Rockchip binary CFG files.      |
+| `rkcfg.cpp`     | Parser and writer logic reused by `rkcfgtool`. |
+| `rkcfg.hpp`     | On-disk structures and helper functions. |
 | `test.sh`       | Shell script that builds `rkcfgtool` and executes basic regression tests. |
-| `cfg`           | RKDevTool configuration file and screenshot of the configuration                  |
+| `cfg`           | Sample Rockchip CFG files used in tests. |
 | `AGENTS.md`     | *← you are here* — workflow guide for AI agents.                          |
 
 ## Tool Overview & Principles
@@ -30,19 +32,19 @@
 Run **all** tests exactly like this:
 
 ```bash
+make lint
 ./test.sh
 
 # or
-make test
+make lint test
 ```
 
-The script must exit with status 0. If you need extra test cases, append them **inside** `test.sh` and keep the script idempotent.
-
-cfg files
+The script must exit with status 0. It rebuilds every cfg in `cfg/` and verifies the binaries match.
+Example operations:
 
 ```bash
 ./rkcfgtool cfg/config1.cfg --add add1 add1 -o config1_add1.cfg
-./rkcfgtool cfg/config1.cfg --disable 9 -o config1_disable9.cfg
+./rkcfgtool cfg/config1.cfg --enable 9 0 -o config1_enable9_off.cfg
 ./rkcfgtool cfg/config1.cfg --set-name 9 modified -o config1_modfied9_name.cfg
 ./rkcfgtool cfg/config1.cfg --set-path 9 modified -o config1_modfied9_path.cfg
 ./rkcfgtool cfg/config1.cfg --del 9 -o config1_remove9.cfg
