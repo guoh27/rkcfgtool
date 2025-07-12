@@ -59,4 +59,21 @@ assert [e['index'] for e in data] == list(range(len(data)))
 EOF
 rm -f t4.cfg out.json
 
+echo "Comparing binary outputs..."
+cp cfg/config1.cfg td.cfg
+for i in $(seq 0 9); do
+    ./rkcfgtool td.cfg --enable $i 0 -o td.cfg >/dev/null
+done
+tail -c +23 td.cfg > td.tail
+tail -c +23 cfg/config1_disable_all.cfg > exp.tail
+cmp -s td.tail exp.tail
+rm -f td.tail exp.tail
+cp cfg/config1.cfg t9.cfg
+./rkcfgtool t9.cfg --enable 9 0 -o t9.cfg >/dev/null
+tail -c +23 t9.cfg > t9.tail
+tail -c +23 cfg/config1_disable9.cfg > exp2.tail
+cmp -s t9.tail exp2.tail
+rm -f t9.tail exp2.tail
+rm -f td.cfg t9.cfg
+
 echo "All tests passed"

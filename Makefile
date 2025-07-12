@@ -9,15 +9,15 @@ BINDIR ?= $(PREFIX)/bin
 
 all: $(TARGET)
 
-$(TARGET): rkcfgtool.cpp version.hpp
-	$(CXX) $(CXXFLAGS) -o $@ rkcfgtool.cpp
+$(TARGET): rkcfgtool.cpp rkcfg.cpp version.hpp rkcfg.hpp
+	$(CXX) $(CXXFLAGS) -o $@ rkcfgtool.cpp rkcfg.cpp
 
 install: $(TARGET)
-	install -d $(DESTDIR)$(BINDIR)
-	install -m 0755 $(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET)
+		install -d $(DESTDIR)$(BINDIR)
+		install -m 0755 $(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET)
 
 lint:
-	$(CXX) $(CXXFLAGS) -fsyntax-only rkcfgtool.cpp
+	        $(CXX) $(CXXFLAGS) -fsyntax-only rkcfgtool.cpp rkcfg.cpp
 
 test: $(TARGET)
 	./test.sh
