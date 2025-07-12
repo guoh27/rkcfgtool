@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <iostream>
 #include <locale>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -27,6 +28,19 @@
 
 // UTF-16LE ⇄ UTF-8 converter
 static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
+
+static std::optional<size_t> parseIndex(const std::vector<Entry> &items,
+                                        const char *arg) {
+  int idx = std::stoi(arg);
+  if (idx == -1) {
+    if (items.empty())
+      return std::nullopt;
+    return items.size() - 1;
+  }
+  if (idx < 0 || static_cast<size_t>(idx) >= items.size())
+    return std::nullopt;
+  return static_cast<size_t>(idx);
+}
 
 /*--------------------------------------------------------------------
  * 2. Helper functions
@@ -111,6 +125,7 @@ Actions (may repeat; executed in order):
   -o, --output <file>            Write result to <file>
   -V, --version                  Show rkcfgtool version
   -h, --help                     Show this help message
+  <idx> may be -1 to target the last entry
 )";
 }
 
@@ -162,22 +177,24 @@ int main(int argc, char *argv[]) {
     if (arg == "--list") {
       // no-op: default action
     } else if (arg == "--set-path" && i + 2 < argc) {
-      size_t idx = std::stoul(argv[++i]);
+      auto idxOpt = parseIndex(items, argv[++i]);
       std::u16string newP = cvt.from_bytes(argv[++i]);
-      if (idx >= items.size()) {
+      if (!idxOpt) {
         std::cerr << "Index out of range\n";
         return 1;
       }
+      size_t idx = *idxOpt;
       items[idx].path = std::move(newP);
       writeFixed(items[idx].raw.imagePath, 260, items[idx].path);
       modified = true;
     } else if (arg == "--set-name" && i + 2 < argc) {
-      size_t idx = std::stoul(argv[++i]);
+      auto idxOpt = parseIndex(items, argv[++i]);
       std::u16string newN = cvt.from_bytes(argv[++i]);
-      if (idx >= items.size()) {
+      if (!idxOpt) {
         std::cerr << "Index out of range\n";
         return 1;
       }
+      size_t idx = *idxOpt;
       items[idx].name = std::move(newN);
       writeFixed(items[idx].raw.name, 40, items[idx].name);
       modified = true;
@@ -191,20 +208,22 @@ int main(int argc, char *argv[]) {
       items.push_back(std::move(e));
       modified = true;
     } else if (arg == "--del" && i + 1 < argc) {
-      size_t idx = std::stoul(argv[++i]);
-      if (idx >= items.size()) {
+      auto idxOpt = parseIndex(items, argv[++i]);
+      if (!idxOpt) {
         std::cerr << "Index out of range\n";
         return 1;
       }
+      size_t idx = *idxOpt;
       items.erase(items.begin() + idx);
       modified = true;
     } else if (arg == "--enable" && i + 2 < argc) {
-      size_t idx = std::stoul(argv[++i]);
+      auto idxOpt = parseIndex(items, argv[++i]);
       int flag = std::stoi(argv[++i]);
-      if (idx >= items.size()) {
+      if (!idxOpt) {
         std::cerr << "Index out of range\n";
         return 1;
       }
+      size_t idx = *idxOpt;
       items[idx].selected = flag ? 1 : 0;
       items[idx].raw.isSelected = items[idx].selected;
       modified = true;
@@ -228,14 +247,17 @@ int main(int argc, char *argv[]) {
         std::cout << ",\n";
       std::cout << "  {\"index\":" << i << ",\"name\":\""
                 << jsonEscape(cvt.to_bytes(items[i].name)) << "\",\"path\":\""
-                << jsonEscape(cvt.to_bytes(items[i].path)) << "\"}";
+                << jsonEscape(cvt.to_bytes(items[i].path))
+                << "\",\"enabled\":" << static_cast<int>(items[i].selected)
+                << "}";
     }
     std::cout << "\n]\n";
   } else {
     std::cout << "=== Entry list (" << items.size() << ") ===\n";
     for (size_t i = 0; i < items.size(); ++i)
       std::cout << std::setw(2) << i << " " << cvt.to_bytes(items[i].name)
-                << " " << cvt.to_bytes(items[i].path) << '\n';
+                << " " << cvt.to_bytes(items[i].path) << " "
+                << static_cast<int>(items[i].selected) << '\n';
   }
 
   if (modified && outFile.empty())

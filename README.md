@@ -31,6 +31,10 @@ Actions:
 - `--create` – start a new config instead of reading one
 - `--version` – show rkcfgtool version
 - `--help` – show usage information
+- `<idx>` may be `-1` to target the last entry
+
+Plain output lists `index name path enabled`. JSON objects include an
+`"enabled"` field.
 
 ## Tests
 
