@@ -44,7 +44,7 @@ Example operations:
 
 ```bash
 ./rkcfgtool cfg/config1.cfg --add add1 add1 -o config1_add1.cfg
-./rkcfgtool cfg/config1.cfg --enable 9 0 -o config1_enable9_off.cfg
+./rkcfgtool cfg/config1.cfg --enable 9 0 -o config1_disable9.cfg
 ./rkcfgtool cfg/config1.cfg --set-name 9 modified -o config1_modfied9_name.cfg
 ./rkcfgtool cfg/config1.cfg --set-path 9 modified -o config1_modfied9_path.cfg
 ./rkcfgtool cfg/config1.cfg --del 9 -o config1_remove9.cfg
