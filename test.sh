@@ -24,8 +24,7 @@ echo "Parsing non-JSON output..."
 ./rkcfgtool cfg/config1.cfg > list.txt
 grep -q "=== Entry list" list.txt
 test $(grep -c '^ [0-9]' list.txt) -eq 10
-grep '^ 0 ' list.txt | grep -q loader
-grep '^ 0 .* 1$' list.txt
+grep '^ 0 1 ' list.txt | grep -q loader
 rm list.txt
 
 echo "Modifying existing cfg..."

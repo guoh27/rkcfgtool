@@ -6,9 +6,11 @@
 #include <iostream>
 #include <locale>
 
+// Convert between UTF-8 and UTF-16LE strings used in the configuration.
 static std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> cvt;
 
 
+// Read a Rockchip CFG file from disk and fill hdr and items. Returns true on success.
 bool readRkcfg(const std::string &path, RKCfgHeader &hdr,
                std::vector<Entry> &items) {
   std::ifstream in(path, std::ios::binary);
@@ -44,6 +46,7 @@ bool readRkcfg(const std::string &path, RKCfgHeader &hdr,
   return true;
 }
 
+// Write hdr and items to a Rockchip CFG file. Returns true when the file is saved successfully.
 bool writeRkcfg(const std::string &path, RKCfgHeader hdr,
                 const std::vector<Entry> &items) {
   hdr.length = static_cast<uint8_t>(items.size());
