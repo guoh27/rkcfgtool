@@ -2,10 +2,12 @@ ifeq ($(origin CXX),default)
 CXX = g++
 endif
 
-CXXFLAGS ?= -std=c++17 -Wall -Wextra -O2
+CXXFLAGS ?= -Wall -Wextra -O2
 TARGET = rkcfgtool
 PREFIX ?= /usr/local
 BINDIR ?= $(PREFIX)/bin
+
+CXXFLAGS += -std=c++17
 
 all: $(TARGET)
 
